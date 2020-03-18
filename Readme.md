@@ -6,7 +6,7 @@ This is a NLP Code Chanllenge project on a dataset about titles and votes. The d
 
 Based on this dataset, the problem I came up with is to predict the popularity purely based on the title. I would like to forecast the total number of up-votes when a news article is published long enough. This kind o fproblem is meaninful, beacuse for example, news platform could find potential popular articles on the front page and attract more customers. 
 
-I used recurrent neural network (RNN) model to build the complicated regression / prediciton framework, and uses Python 3 with Tensorflow package to implement the method and finished model evaluation. To deal with huge size of data, only a part of data is read into memory and the model is trained gradually in iterations.
+I used recurrent neural network (RNN) model to build the complicated regression / prediciton framework, and uses Python 3 with Tensorflow package to implement the method and finished model evaluation. To deal with huge size of data, only a chunk of data is read into memory and the model is trained gradually in iterations.
 
 # Notes on Backgroud
 
@@ -32,7 +32,7 @@ Then basd on the list of words, I used embedding method to covert the dictionary
 
 To deal with the gradient vanishing / explosition problem, the gating method of LSTM is used. Here I build several recurent layers with LSTM to process the word list. Then dense layers are used to furthermore process the data set, until then, a single output is calculated as the popularity.
 
-To deal with the potentially huge amount of data (over 100GB), iterative method is used. Each time only a part of data is read into memory, and the RNN model is trained or updated based on current batch of data. With iterations over dataset, the model is trained on each part of the dataset and finally updated to fit the whole large dataset. 
+To deal with the potentially huge amount of data (over 100GB), iterative method is used. Each time only a part of data is read into memory, and the RNN model is trained or updated based on current chunk of data. With iterations over dataset, the model is trained on each part of the dataset and finally updated to fit the whole large dataset. 
 
 # Coding
 
@@ -46,13 +46,86 @@ import tensorflow as tf
 from tensorflow import keras
 ```
 
-If extremely large datasets are needed, the Apache Spark might be used. Here it is not necessary
-```ptyhon
+If extremely large datasets are needed, the Apache Spark might be used. Here it is not necessary to use Spark. 
+```python
 # import pyspark
 # import findspark
 # import os
 # from pyspark import SparkContext
 ```
+
+For later usage, I defined several constants: "filename" to store the location of dataset, "chunksize" to define the size of chunk to be read into memory in each iteration, "dictsize" to define the size of dictionary of often-used words, "maxlen" to define the maximum length of title to be considered in RNN model, and "embedsize" to define the embedding dimensions.
+```python
+# define parameters
+filename = "Eluvio_DS_Challenge.csv"
+chunksize = 100000
+dictsize = 1000
+maxlen = 30
+embedsize = 5
+```
+
+Then a full dictionary is build by traversing the whole dataset, for simplicity just read the whole dataset or a fixed amount of lines in the whole dataset. After reading in the dataset, the dictionary tokenizer is fitted on it.
+```python
+# fulldf = pd.read_csv(filename, nrows=chunksize)
+fulldf = pd.read_csv(filename)
+# create tokenizer object (convert words to integers)
+tokenizer = keras.preprocessing.text.Tokenizer(num_words=dictsize)
+tokenizer.fit_on_texts(fulldf["title"])
+```
+
+Here I use the RNN model with 1 hidden layer of embedding, 3 hidden layer of LSTM, 2 hidden layers of dense neurons. By testing several options, the activation functions are set to be "Sigmoid" or "ReLU", and the optimizer is set to be "Adam". (See the model summary in the output.txt file)
+```python
+# build empty RNN model
+rnnmodel = keras.Sequential()
+# add embedding layer (convert integers to vectors)
+rnnmodel.add( keras.layers.Embedding(input_dim=dictsize, output_dim=embedsize, input_length=maxlen) )
+# add LSTM layer outputs at every time
+rnnmodel.add( keras.layers.LSTM(units=10, return_sequences=True, activation="sigmoid") )
+# add LSTM layer outputs at every time
+rnnmodel.add( keras.layers.LSTM(units=10, return_sequences=True, activation="sigmoid") )
+# add LSTM layer outputs at every time
+rnnmodel.add( keras.layers.LSTM(units=5, return_sequences=False, activation="sigmoid") )
+# add fully connected layer to return 0/1
+rnnmodel.add( keras.layers.Dense(units=5, activation="relu") )
+# add fully connected layer to return value
+rnnmodel.add( keras.layers.Dense(units=1) )
+# compile RNN model
+rnnmodel.compile(loss="mse", optimizer=keras.optimizers.Adam(lr=1e-3))
+# check RNN model summary
+rnnmodel.summary()
+```
+
+Then the RNN model is trained on chunks of dataset iteratively. Here all text titles are converted to word lists of max length 30. Extra words in the end are removed if word list is too long, and zeros are added to the front if too short. In each of the interations, validation of size 5% is used. Batch of size 100 is trained each time and the chunk of dataset is trained repeated with 5 epochs. 
+```python
+# read in dataframe in chunks
+i = 0
+for df in pd.read_csv(filename, chunksize=chunksize):
+    print("reading chunk", i)
+    i = i + 1
+
+    # pre-process data (df_x, df_y)
+    # tokenize words to integers by pre-defined tokenizer
+    df_token = tokenizer.texts_to_sequences(df["title"])
+    # convert to same length to be used as x in tensorflow
+    df_x = keras.preprocessing.sequence.pad_sequences(df_token, maxlen=maxlen, padding="pre", truncating="pre")
+    # use log of upvotes as y value
+    df_uv = np.add(df["up_votes"], 1)
+    df_y = np.log(df_uv)
+
+    # split data into train and test (train_x, train_y, test_x, test_y)
+    ind = np.random.rand(len(df)) < 0.8
+    train_x = df_x[ind]
+    test_x = df_x[~ind]
+    train_y = np.asarray(df_y[ind])
+    test_y = np.asarray(df_y[~ind])
+    # train / update RNN model in current chunk
+    rnnmodel.fit(train_x, train_y, batch_size=100, epochs=5, validation_split=0.05)
+```
+
+
+
+
+
 
 
 
