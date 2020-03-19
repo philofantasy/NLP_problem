@@ -1,6 +1,6 @@
 # NLP Challenge by Jiayi Fu
 
-# Introduction
+## Introduction
 
 This is a NLP Code Chanllenge project on a dataset about titles and votes. The data set containing 522278 rows following 8 columns: time_created, date_created, up_votes, down_votes, title, over_18, author, category.
 
@@ -8,7 +8,7 @@ Based on this dataset, the problem I came up with is to predict the popularity p
 
 I used recurrent neural network (RNN) model to build the complicated regression / prediciton framework, and uses Python 3 with Tensorflow package to implement the method and finished model evaluation. To deal with huge size of data, only a chunk of data is read into memory and the model is trained gradually in iterations.
 
-# Notes on Backgroud
+## Notes on Backgroud
 
 By exploratory analysis, I ignored other information here for simplicity: 
 
@@ -20,7 +20,7 @@ I also ignored the over 18 and category information. Beacuse of the prevalent "F
 
 Author information is kind of unstable over long time, although it is true that there might be some popular authors that always creates articles with great amount of up-votes. According to the data set, the authors look like users instead of media companies, which means they are more likely to be come-and-go writters over long span of time, instead of reliable news soures. It will take too much time and space to deal with the author information, espcially when many authors may suddenly jump in, only publish several articles, and then quit forever. Therefore, the author column does not provide enough power to predict the popularity of articles.
 
-# Model
+## Model
 
 I would like to create a recurrent neural network (RNN) model to deal with the title and predict the popularity. 
 
@@ -34,7 +34,7 @@ To deal with the gradient vanishing / explosition problem, the gating method of 
 
 To deal with the potentially huge amount of data (over 100GB), iterative method is used. Each time only a part of data is read into memory, and the RNN model is trained or updated based on current chunk of data. With iterations over dataset, the model is trained on each part of the dataset and finally updated to fit the whole large dataset. 
 
-# Coding
+## Coding
 
 Firstly, I imported several python libraries including math, numpy, pandas, and tensorflow.
 ```python
@@ -135,15 +135,13 @@ print("compare:", var)
 # result = rnnmodel.predict(pred_x)
 ```
 
-# Discussion 
+## Result and Discussion 
 
 Using MSE as the measure of loss, the final prediction has loss of 3.39, while the average total loss in the data set is 3.82. Therefore, the RNN model could indeed explan the popularity by using only the title information. That is to say, the RNN model indeed can be considered as a automatic prediting system, and can be regarded as a reference for popularity of articles. However, the loss itself is still large, and thus the model could still be improved.
 
 One reason for the RNN model not performing as expected is that the dataset is too small to train a complicated RNN, while a too simple RNN model could not explan the data well. The number of up-votes is a result of complicated process, it depends on a lot of variables, and in order to predict it using machine learning, sufficiently large dataset is necessary. Therefore, if possible, more data should be put into model in order to have a better result. 
 
 Another reason is that the prediction is purely based on title information. The information provided is insufficient, and more useful features of the news articles should be considered. For example, full text, publication platform, author's years of experience, historical events happend at each time, etc. Even for human, it is not possible to fully predict popularity only based on title, and more information must be provided. 
-
-
 
 
 
