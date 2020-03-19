@@ -122,8 +122,26 @@ for df in pd.read_csv(filename, chunksize=chunksize):
     rnnmodel.fit(train_x, train_y, batch_size=100, epochs=5, validation_split=0.05)
 ```
 
+Finally, the RNN model is used to predict the popularity on testing dataset created selected from each chunk of data. For simplicity, here I only use the latest data as my testing set, since it is meaningful to predict newly publshed articles.
+```python
+# evaluate RNN model
+result = rnnmodel.evaluate(test_x, test_y)
+print("MSE: ", result)
 
+mean = sum(df_y)/len(df_y)
+var = sum(np.square(np.add(df_y, - mean)))/len(df_y)
+print("compare:", var)
+# predict RNN model
+# result = rnnmodel.predict(pred_x)
+```
 
+# Discussion 
+
+Using MSE as the measure of loss, the final prediction has loss of 3.39, while the average total loss in the data set is 3.82. Therefore, the RNN model could indeed explan the popularity by using only the title information. That is to say, the RNN model indeed can be considered as a automatic prediting system, and can be regarded as a reference for popularity of articles. However, the loss itself is still large, and thus the model could still be improved.
+
+One reason for the RNN model not performing as expected is that the dataset is too small to train a complicated RNN, while a too simple RNN model could not explan the data well. The number of up-votes is a result of complicated process, it depends on a lot of variables, and in order to predict it using machine learning, sufficiently large dataset is necessary. Therefore, if possible, more data should be put into model in order to have a better result. 
+
+Another reason is that the prediction is purely based on title information. The information provided is insufficient, and more useful features of the news articles should be considered. For example, full text, publication platform, author's years of experience, historical events happend at each time, etc. Even for human, it is not possible to fully predict popularity only based on title, and more information must be provided. 
 
 
 
